@@ -1,4 +1,4 @@
-/* globals XMLHttpRequest */
+/* globals XMLHttpRequest, d3 */
 
 (function() {
   var dataURL = 'https://raw.githubusercontent.com/FreeCodeCamp/ProjectReferenceData/master/GDP-data.json';
@@ -25,26 +25,43 @@
   };
 
   var handleData = function(data) {
-    var margin = {top: 10, right: 30, bottom: 30, left: 30},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+    var width = 850;
+    var height = 500;
 
     var parseDate = d3.time.format("%Y-%m-%d").parse;
-    var x = d3.time.scale().range([0, width]);
-    var y = d3.scale.linear().range([height, 0]);
+    var formatDate = d3.time.format("%Y");
+
+    var svg = d3.select(".chart").append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .append("g");
+
 
     var fData = data.data.map(function(d) {
-      return {date: parseDate(d[0]), value: Number(d[1])};
+      return {date: parseDate(d[0]), value: +d[1]};
     });
-    console.log(fData);
-    var svg = d3.select("body")
-		  .append("svg")
-		  .attr("width", width + margin.left + margin.right)
-		  .attr("height", height + margin.top + margin.bottom)
-		  .append("g")
-		  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    // var x = d3.time.scale().range([0, width]);
+    var y = d3.scale.linear()
+              .range([height, 0])
+              .domain([0, d3.max(fData, function(d) { return d.value; })]);
+    // var xAxis = d3.svg.axis().scale(x)
+		//   .orient("bottom").tickFormat(formatDate);
+    var x = d3.scale.ordinal()
+              .rangeRoundBands([0, width], 0)
+              .domain(fData.map(function(d) { return d.date; }));
 
+    var xAxis = d3.svg.axis()
+                  .scale(x)
+                  .orient("bottom");
 
+    svg.selectAll(".bar")
+       .data(fData)
+       .enter().append("rect")
+       .attr("class", "bar")
+       .attr("x", function(d) { return x(d.date); })
+       .attr("width", x.rangeBand())
+       .attr("y", function(d) { return y(d.value); })
+       .attr("height", function(d) { return height - y(d.value); });
   };
 
   // setup
